@@ -1,39 +1,36 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
+using System.Net;
+using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Text;
 
-namespace Company.Function
+namespace Company.Function;
+
+public class GetPortfolioCount
 {
-    public static class GetPortfolioCount
+    private readonly ILogger _logger;
+
+    public GetPortfolioCount(ILoggerFactory loggerFactory)
     {
-        [FunctionName("GetPortfolioCount")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            [CosmosDB(databaseName:"AzurePortfolio", collectionName: "Counter", ConnectionStringSetting = "AzurePortfolioConnectionString", Id = "1", PartitionKey = "1")] Counter counter,
-            [CosmosDB(databaseName:"AzurePortfolio", collectionName: "Counter", ConnectionStringSetting = "AzurePortfolioConnectionString", Id = "1", PartitionKey = "1")] out Counter updatedCounter,
-            ILogger log)
+        _logger = loggerFactory.CreateLogger<GetPortfolioCount>();
+    }
+
+    [Function("GetPortfolioCount")]
+    public MyOutputType Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+    [CosmosDBInput(databaseName: "AzurePortfolioCounter", collectionName: 
+    "Counter", ConnectionStringSetting = "CosmosDbConnectionString", Id = "counter",
+            PartitionKey = "counter")] Counter counter)
+    {
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+        string jsonString = JsonSerializer.Serialize(counter);
+        response.WriteString(jsonString);
+        counter.Count =+ counter.Count+1;
+        return new MyOutputType()
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            string name = req.Query["name"];
-
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
-
-            string responseMessage = string.IsNullOrEmpty(name)
-                ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {name}. This HTTP triggered function executed successfully.";
-
-            return new OkObjectResult(responseMessage);
-        }
+            UpdatedCounter = counter,
+            HttpResponse = response
+        };
     }
 }
