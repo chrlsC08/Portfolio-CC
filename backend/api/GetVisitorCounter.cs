@@ -6,18 +6,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Company.Function;
 
-public class GetVisitorCounter
+public class GetPortfolioCounter
 {
     private readonly ILogger _logger;
 
-    public GetVisitorCounter(ILoggerFactory loggerFactory)
+    public GetPortfolioCounter(ILoggerFactory loggerFactory)
     {
-        _logger = loggerFactory.CreateLogger<GetVisitorCounter>();
+        _logger = loggerFactory.CreateLogger<GetPortfolioCounter>();
     }
 
-    [Function("GetVisitorCounter")]
+    [Function("GetPortfolioCounter")]
     public MyOutputType Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-    [CosmosDBInput(databaseName: "CloudResume", collectionName: 
+    [CosmosDBInput(databaseName: "AzurePorfolioCounter", collectionName: 
     "Counter", ConnectionStringSetting = "CosmosDbConnectionString", Id = "index",
             PartitionKey = "index")] Counter counter)
     {
